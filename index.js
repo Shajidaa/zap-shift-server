@@ -5,8 +5,7 @@ require("dotenv").config();
 const { MongoClient, ServerApiVersion } = require("mongodb");
 
 const port = process.env.PORT || 3000;
-console.log(process.env.DB_USER);
-console.log(process.env.DB_PASS);
+
 //middleware
 app.use(express.json());
 app.use(cors());
@@ -24,6 +23,18 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+
+    const myDb = client.db("zap_shift_db");
+    const parcelCollection = myDb.collection("parcels");
+
+    //parcels api
+    app.get("/parcels", async (req, res) => {});
+
+    app.post("/parcels", async (req, res) => {
+      const parcels = req.body;
+      const result = parcelCollection.insertOne(parcels);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
