@@ -28,11 +28,16 @@ async function run() {
     const parcelCollection = myDb.collection("parcels");
 
     //parcels api
-    app.get("/parcels", async (req, res) => {});
+    app.get("/parcels", async (req, res) => {
+      const query = {};
+      const cursor = parcelCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
 
     app.post("/parcels", async (req, res) => {
       const parcels = req.body;
-      const result = parcelCollection.insertOne(parcels);
+      const result = await parcelCollection.insertOne(parcels);
       res.send(result);
     });
 
