@@ -75,7 +75,7 @@ async function run() {
       const result = await parcelCollection.deleteOne(query);
       res.send(result);
     });
-
+    //payment related api
     app.post("/create-checkout-session", async (req, res) => {
       const paymentInfo = req.body;
       const amount = parseInt(paymentInfo.cost) * 100;
@@ -107,42 +107,11 @@ async function run() {
       res.send({ url: session.url });
     });
 
-    // app.post("/create-checkout-session", async (req, res) => {
-    //   const paymentInfo = req.body;
-    //   const amount = parseInt(paymentInfo.cost) * 100;
-
-    //   const session = await stripe.checkout.sessions.create({
-    //     line_items: [
-    //       {
-    //         price_data: {
-    //           currency: "USD",
-    //           unit_amount: amount,
-    //           product_data: {
-    //             name: paymentInfo.parcelName,
-    //           },
-    //         },
-    //         quantity: 1,
-    //       },
-    //     ],
-    //     customer_email: paymentInfo.senderEmail,
-    //     mode: "payment",
-    //     metadata: {
-    //       parcelId: paymentInfo.parcelId,
-    //       parcelName: paymentInfo.parcelName,
-    //     },
-    //     success_url: `${process.env.SITE_DOMAIN}/dashboard/payment-success`,
-    //     cancel_url: `${process.env.SITE_DOMAIN}/dashboard/payment-cancelled`,
-    //   });
-
-    //   console.log(session);
-    //   res.send({ url: session.url });
-    // });
-
     app.patch("/payment-success", async (req, res) => {
       const sessionId = req.query.session_id;
 
       const session = await stripe.checkout.sessions.retrieve(sessionId);
-      console.log("session retried", session);
+      // console.log("session retried", session);
       const transactionId = session.payment_intent;
 
       const query = { transactionId: transactionId };
@@ -192,6 +161,17 @@ async function run() {
       res.send({
         success: false,
       });
+    });
+
+    app.get("/payment", async (req, res) => {
+      const email = req.query.email;
+      const query = {};
+      if (email) {
+        query.customElements = email;
+      }
+      const cursor = paymentCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
     });
 
     // Send a ping to confirm a successful connection
