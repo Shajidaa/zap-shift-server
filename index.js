@@ -57,12 +57,12 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
 
     const myDb = client.db("zap_shift_db");
     const userCollection = myDb.collection("users");
     const parcelCollection = myDb.collection("parcels");
     const paymentCollection = myDb.collection("payments");
+    const ridersCollection = myDb.collection("riders");
 
     //users apis
     app.post("/users", async (req, res) => {
@@ -211,6 +211,25 @@ async function run() {
         query.customElements = email;
       }
       const cursor = paymentCollection.find(query).sort({ paidAt: -1 });
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    //riders related apis
+    app.post("/riders", async (req, res) => {
+      const rider = req.body;
+      rider.status = "pending";
+      rider.createdAt = new Date();
+      const result = await ridersCollection.insertOne(rider);
+      res.send(result);
+    });
+
+    app.get("/riders", async (req, res) => {
+      const query = {};
+      if (req.query.status) {
+        query.status = req.query.status;
+      }
+      const cursor = ridersCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     });
