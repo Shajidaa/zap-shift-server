@@ -64,11 +64,47 @@ async function run() {
     const paymentCollection = myDb.collection("payments");
     const ridersCollection = myDb.collection("riders");
 
+    //middle more with database access
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded_email;
+      const query = { email };
+      const user = await userCollection.findOne(query);
+      if (!user || user.role !== "admin") {
+        return res.status(403).send({ message: "forbidden" });
+      }
+      next();
+    };
+
     //users apis
-    app.get("/users", async (req, res) => {
-      const result = await userCollection.find().toArray();
+    app.get("/users", verifyFbToken, async (req, res) => {
+      const searchText = req.query.search;
+      const query = {};
+      if (searchText) {
+        query.$or = [
+          { displayName: { $regex: searchText, $options: "i" } },
+          { email: { $regex: searchText, $options: "i" } },
+        ];
+      }
+
+      const result = await userCollection
+        .find(query)
+        .sort({ createdAt: -1 })
+        .limit(2)
+        .toArray();
       res.send(result);
     });
+
+    app.get(
+      "/users/:email/role",
+      verifyFbToken,
+
+      async (req, res) => {
+        const email = req.params.email;
+        const query = { email };
+        const user = await userCollection.findOne(query);
+        res.send({ role: user?.role || "user" });
+      }
+    );
 
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -85,22 +121,27 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/users/:id", async (req, res) => {
-      const id = req.params.id;
-      const roleInfo = req.body;
+    app.patch(
+      "/users/:id/role",
+      verifyFbToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const roleInfo = req.body;
 
-      const query = { _id: new ObjectId(id) };
+        const query = { _id: new ObjectId(id) };
 
-      const updatedDoc = {
-        $set: {
-          role: roleInfo.role,
-        },
-      };
+        const updatedDoc = {
+          $set: {
+            role: roleInfo.role,
+          },
+        };
 
-      const result = await userCollection.updateOne(query, updatedDoc);
+        const result = await userCollection.updateOne(query, updatedDoc);
 
-      res.send(result);
-    });
+        res.send(result);
+      }
+    );
 
     //parcels api
     app.get("/parcels", async (req, res) => {
@@ -256,7 +297,7 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/riders/:id", verifyFbToken, async (req, res) => {
+    app.patch("/riders/:id", verifyFbToken, verifyAdmin, async (req, res) => {
       const status = req.body.status;
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
