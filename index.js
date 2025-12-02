@@ -65,6 +65,11 @@ async function run() {
     const ridersCollection = myDb.collection("riders");
 
     //users apis
+    app.get("/users", async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+
     app.post("/users", async (req, res) => {
       const user = req.body;
       user.role = "user";
@@ -77,6 +82,23 @@ async function run() {
         return res.send({ message: "user exists------------------" });
       }
       const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+
+    app.patch("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const roleInfo = req.body;
+
+      const query = { _id: new ObjectId(id) };
+
+      const updatedDoc = {
+        $set: {
+          role: roleInfo.role,
+        },
+      };
+
+      const result = await userCollection.updateOne(query, updatedDoc);
+
       res.send(result);
     });
 
